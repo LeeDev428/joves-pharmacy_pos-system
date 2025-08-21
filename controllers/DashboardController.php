@@ -48,11 +48,47 @@ class DashboardController {
     
     public function getLowStockProducts($limit = 5) {
         try {
-            $stmt = $this->db->prepare("SELECT * FROM products WHERE stock_quantity <= 10 AND status = 'active' 
-                                      ORDER BY stock_quantity ASC LIMIT ?");
+            $stmt = $this->db->prepare("
+                SELECT p.*, c.name as category_name,
+                       CASE 
+                           WHEN p.stock_quantity = 0 THEN 'out-of-stock'
+                           WHEN p.stock_quantity <= (p.low_stock_threshold * 0.5) THEN 'critical'
+                           WHEN p.stock_quantity <= p.low_stock_threshold THEN 'low'
+                           ELSE 'normal'
+                       END as stock_status
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.id 
+                WHERE p.stock_quantity <= p.low_stock_threshold 
+                AND p.status = 'active'
+                ORDER BY p.stock_quantity ASC, p.name ASC 
+                LIMIT ?
+            ");
             $stmt->execute([$limit]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch(PDOException $e) {
+            error_log("Error fetching low stock products: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getNearExpiryProducts($limit = 5) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT p.*, c.name as category_name,
+                       DATEDIFF(p.expiry_date, CURDATE()) as days_to_expiry
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.id 
+                WHERE p.expiry_date IS NOT NULL 
+                AND p.expiry_date <= DATE_ADD(CURDATE(), INTERVAL 5 DAY)
+                AND p.expiry_date >= CURDATE()
+                AND p.status = 'active'
+                ORDER BY p.expiry_date ASC, p.name ASC
+                LIMIT ?
+            ");
+            $stmt->execute([$limit]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Error fetching near expiry products: " . $e->getMessage());
             return [];
         }
     }

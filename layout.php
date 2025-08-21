@@ -170,6 +170,20 @@ requireLogin();
                         Inventory
                     </a>
                 </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'low_stock.php' ? 'active' : ''; ?>" href="low_stock.php">
+                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                        Low Stock Alert
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'near_expiries.php' ? 'active' : ''; ?>" href="near_expiries.php">
+                        <i class="fas fa-clock text-warning"></i>
+                        Near Expiries
+                    </a>
+                </li>
                 <?php endif; ?>
                 
                 <li class="nav-item">

@@ -12,6 +12,7 @@ $dashboardController = new DashboardController();
 $stats = $dashboardController->getStats();
 $recentOrders = $dashboardController->getRecentOrders();
 $lowStockProducts = $dashboardController->getLowStockProducts();
+$nearExpiryProducts = $dashboardController->getNearExpiryProducts();
 
 $role = $_SESSION['role'];
 $page_title = $role === 'admin' ? 'Admin Dashboard' : 'Staff Dashboard';
@@ -144,31 +145,85 @@ ob_start();
         <?php if ($role === 'admin'): ?>
         <div class="content-card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Low Stock Alert</h5>
-                <span class="badge bg-danger"><?php echo count($lowStockProducts); ?> Items</span>
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                    Stock Alerts
+                </h5>
+                <div>
+                    <?php if (!empty($lowStockProducts)): ?>
+                        <span class="badge bg-danger me-1"><?php echo count($lowStockProducts); ?> Low</span>
+                    <?php endif; ?>
+                    <?php if (!empty($nearExpiryProducts)): ?>
+                        <span class="badge bg-warning"><?php echo count($nearExpiryProducts); ?> Expiring</span>
+                    <?php endif; ?>
+                </div>
             </div>
             <div class="card-body">
-                <?php if (empty($lowStockProducts)): ?>
+                <?php if (empty($lowStockProducts) && empty($nearExpiryProducts)): ?>
                     <div class="text-center py-4">
                         <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
-                        <p class="text-muted">All items are well stocked</p>
+                        <p class="text-muted">All items are well stocked and fresh</p>
                     </div>
                 <?php else: ?>
-                    <?php foreach ($lowStockProducts as $product): ?>
-                    <div class="d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded">
-                        <div>
-                            <div class="fw-bold text-dark"><?php echo htmlspecialchars($product['name']); ?></div>
-                            <small class="text-muted">Stock: <?php echo $product['stock_quantity']; ?></small>
+                    <!-- Low Stock Items -->
+                    <?php if (!empty($lowStockProducts)): ?>
+                        <h6 class="text-danger mb-2">
+                            <i class="fas fa-boxes me-1"></i>Low Stock Items
+                        </h6>
+                        <?php foreach (array_slice($lowStockProducts, 0, 3) as $product): ?>
+                        <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                            <div>
+                                <div class="fw-bold text-dark"><?php echo htmlspecialchars($product['name']); ?></div>
+                                <small class="text-muted">Threshold: <?php echo $product['low_stock_threshold']; ?></small>
+                            </div>
+                            <span class="badge bg-<?php echo $product['stock_status'] === 'out-of-stock' ? 'dark' : ($product['stock_status'] === 'critical' ? 'danger' : 'warning'); ?>">
+                                <?php echo $product['stock_quantity']; ?> left
+                            </span>
                         </div>
-                        <span class="badge bg-danger">Only <?php echo $product['stock_quantity']; ?> left</span>
-                    </div>
-                    <?php endforeach; ?>
+                        <?php endforeach; ?>
+                        
+                        <?php if (count($lowStockProducts) > 3): ?>
+                            <small class="text-muted">+<?php echo count($lowStockProducts) - 3; ?> more items</small>
+                        <?php endif; ?>
+                        
+                        <div class="text-center mt-2">
+                            <a href="low_stock.php" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-boxes me-1"></i>View All Low Stock
+                            </a>
+                        </div>
+                        
+                        <?php if (!empty($nearExpiryProducts)): ?>
+                            <hr>
+                        <?php endif; ?>
+                    <?php endif; ?>
                     
-                    <div class="text-center mt-3">
-                        <a href="inventory.php" class="btn btn-sm btn-outline-danger">
-                            <i class="fas fa-boxes me-1"></i>Manage Inventory
-                        </a>
-                    </div>
+                    <!-- Near Expiry Items -->
+                    <?php if (!empty($nearExpiryProducts)): ?>
+                        <h6 class="text-warning mb-2">
+                            <i class="fas fa-clock me-1"></i>Expiring Soon
+                        </h6>
+                        <?php foreach (array_slice($nearExpiryProducts, 0, 3) as $product): ?>
+                        <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                            <div>
+                                <div class="fw-bold text-dark"><?php echo htmlspecialchars($product['name']); ?></div>
+                                <small class="text-muted">Expires: <?php echo date('M d, Y', strtotime($product['expiry_date'])); ?></small>
+                            </div>
+                            <span class="badge bg-warning">
+                                <?php echo $product['days_to_expiry']; ?> days
+                            </span>
+                        </div>
+                        <?php endforeach; ?>
+                        
+                        <?php if (count($nearExpiryProducts) > 3): ?>
+                            <small class="text-muted">+<?php echo count($nearExpiryProducts) - 3; ?> more items</small>
+                        <?php endif; ?>
+                        
+                        <div class="text-center mt-2">
+                            <a href="near_expiries.php" class="btn btn-sm btn-outline-warning">
+                                <i class="fas fa-clock me-1"></i>View All Expiring
+                            </a>
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>
