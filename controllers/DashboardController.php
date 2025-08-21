@@ -73,20 +73,43 @@ class DashboardController {
 
     public function getNearExpiryProducts($limit = 5) {
         try {
+            // First, let's see what products exist with expiry dates
+            $debugStmt = $this->db->query("
+                SELECT COUNT(*) as total_with_expiry, 
+                       MIN(expiry_date) as earliest_expiry, 
+                       MAX(expiry_date) as latest_expiry,
+                       CURDATE() as today
+                FROM products 
+                WHERE expiry_date IS NOT NULL 
+                AND status = 'active'
+            ");
+            $debug = $debugStmt->fetch(PDO::FETCH_ASSOC);
+            error_log("Debug - Products with expiry dates: " . print_r($debug, true));
+            
+            // Main query - let's make it more inclusive
             $stmt = $this->db->prepare("
                 SELECT p.*, c.name as category_name,
-                       DATEDIFF(p.expiry_date, CURDATE()) as days_to_expiry
+                       DATEDIFF(p.expiry_date, CURDATE()) as days_to_expiry,
+                       p.expiry_date,
+                       CURDATE() as today
                 FROM products p 
                 LEFT JOIN categories c ON p.category_id = c.id 
                 WHERE p.expiry_date IS NOT NULL 
                 AND p.expiry_date <= DATE_ADD(CURDATE(), INTERVAL 5 DAY)
-                AND p.expiry_date >= CURDATE()
                 AND p.status = 'active'
                 ORDER BY p.expiry_date ASC, p.name ASC
                 LIMIT ?
             ");
             $stmt->execute([$limit]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Debug logging
+            error_log("Near expiry query executed. Found " . count($result) . " products");
+            if (!empty($result)) {
+                error_log("First product: " . print_r($result[0], true));
+            }
+            
+            return $result;
         } catch(PDOException $e) {
             error_log("Error fetching near expiry products: " . $e->getMessage());
             return [];

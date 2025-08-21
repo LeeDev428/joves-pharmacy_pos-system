@@ -14,6 +14,13 @@ $recentOrders = $dashboardController->getRecentOrders();
 $lowStockProducts = $dashboardController->getLowStockProducts();
 $nearExpiryProducts = $dashboardController->getNearExpiryProducts();
 
+// Debug: Let's see what we're getting
+error_log("Low stock products count: " . count($lowStockProducts));
+error_log("Near expiry products count: " . count($nearExpiryProducts));
+if (!empty($nearExpiryProducts)) {
+    error_log("Near expiry products: " . print_r($nearExpiryProducts, true));
+}
+
 $role = $_SESSION['role'];
 $page_title = $role === 'admin' ? 'Admin Dashboard' : 'Staff Dashboard';
 
@@ -88,7 +95,7 @@ ob_start();
 
 <div class="row">
     <!-- Recent Activity -->
-    <div class="col-xl-8 mb-4">
+    <div class="col-xl-12 mb-4">
         <div class="content-card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Recent Orders</h5>
@@ -141,120 +148,7 @@ ob_start();
     </div>
     
     <!-- Low Stock Alert or Quick Actions -->
-    <div class="col-xl-4 mb-4">
-        <?php if ($role === 'admin'): ?>
-        <div class="content-card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
-                    Stock Alerts
-                </h5>
-                <div>
-                    <?php if (!empty($lowStockProducts)): ?>
-                        <span class="badge bg-danger me-1"><?php echo count($lowStockProducts); ?> Low</span>
-                    <?php endif; ?>
-                    <?php if (!empty($nearExpiryProducts)): ?>
-                        <span class="badge bg-warning"><?php echo count($nearExpiryProducts); ?> Expiring</span>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <div class="card-body">
-                <?php if (empty($lowStockProducts) && empty($nearExpiryProducts)): ?>
-                    <div class="text-center py-4">
-                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
-                        <p class="text-muted">All items are well stocked and fresh</p>
-                    </div>
-                <?php else: ?>
-                    <!-- Low Stock Items -->
-                    <?php if (!empty($lowStockProducts)): ?>
-                        <h6 class="text-danger mb-2">
-                            <i class="fas fa-boxes me-1"></i>Low Stock Items
-                        </h6>
-                        <?php foreach (array_slice($lowStockProducts, 0, 3) as $product): ?>
-                        <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
-                            <div>
-                                <div class="fw-bold text-dark"><?php echo htmlspecialchars($product['name']); ?></div>
-                                <small class="text-muted">Threshold: <?php echo $product['low_stock_threshold']; ?></small>
-                            </div>
-                            <span class="badge bg-<?php echo $product['stock_status'] === 'out-of-stock' ? 'dark' : ($product['stock_status'] === 'critical' ? 'danger' : 'warning'); ?>">
-                                <?php echo $product['stock_quantity']; ?> left
-                            </span>
-                        </div>
-                        <?php endforeach; ?>
-                        
-                        <?php if (count($lowStockProducts) > 3): ?>
-                            <small class="text-muted">+<?php echo count($lowStockProducts) - 3; ?> more items</small>
-                        <?php endif; ?>
-                        
-                        <div class="text-center mt-2">
-                            <a href="low_stock.php" class="btn btn-sm btn-outline-danger">
-                                <i class="fas fa-boxes me-1"></i>View All Low Stock
-                            </a>
-                        </div>
-                        
-                        <?php if (!empty($nearExpiryProducts)): ?>
-                            <hr>
-                        <?php endif; ?>
-                    <?php endif; ?>
-                    
-                    <!-- Near Expiry Items -->
-                    <?php if (!empty($nearExpiryProducts)): ?>
-                        <h6 class="text-warning mb-2">
-                            <i class="fas fa-clock me-1"></i>Expiring Soon
-                        </h6>
-                        <?php foreach (array_slice($nearExpiryProducts, 0, 3) as $product): ?>
-                        <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
-                            <div>
-                                <div class="fw-bold text-dark"><?php echo htmlspecialchars($product['name']); ?></div>
-                                <small class="text-muted">Expires: <?php echo date('M d, Y', strtotime($product['expiry_date'])); ?></small>
-                            </div>
-                            <span class="badge bg-warning">
-                                <?php echo $product['days_to_expiry']; ?> days
-                            </span>
-                        </div>
-                        <?php endforeach; ?>
-                        
-                        <?php if (count($nearExpiryProducts) > 3): ?>
-                            <small class="text-muted">+<?php echo count($nearExpiryProducts) - 3; ?> more items</small>
-                        <?php endif; ?>
-                        
-                        <div class="text-center mt-2">
-                            <a href="near_expiries.php" class="btn btn-sm btn-outline-warning">
-                                <i class="fas fa-clock me-1"></i>View All Expiring
-                            </a>
-                        </div>
-                    <?php endif; ?>
-                <?php endif; ?>
-            </div>
-        </div>
-        <?php else: ?>
-        <!-- Staff Quick Actions -->
-        <div class="content-card">
-            <div class="card-header">
-                <h5 class="mb-0">Quick Actions</h5>
-            </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                  
-                    <a href="sales.php" class="btn btn-outline-success">
-                        <i class="fas fa-chart-line me-2"></i>
-                        View Sales Reports
-                    </a>
-                </div>
-                
-                <div class="mt-4 p-3 bg-light rounded">
-                    <h6 class="text-success mb-2">
-                        <i class="fas fa-info-circle me-1"></i>
-                        Staff Access
-                    </h6>
-                    <small class="text-muted">
-                        You have access to POS operations and sales reporting. Contact admin for inventory management.
-                    </small>
-                </div>
-            </div>
-        </div>
-        <?php endif; ?>
-    </div>
+   
 </div>
 
 <!-- Quick Actions Row -->
@@ -274,10 +168,22 @@ ob_start();
                             Add Product
                         </a>
                     </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="near_expiries.php" class="btn btn-danger w-100 btn-custom">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Near Expiry Products
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="low_stock.php" class="btn btn-warning w-100 btn-custom">
+                                <i class="fas fa-box-open me-2"></i>
+                                Low Stock Products
+                            </a>
+                        </div>
                  
                     <?php endif; ?>
                     <div class="col-md-3 mb-3">
-                        <a href="sales.php" class="btn btn-warning w-100 btn-custom">
+                        <a href="reports.php" class="btn btn-warning w-100 btn-custom">
                             <i class="fas fa-chart-bar me-2"></i>
                             View Reports
                         </a>
